@@ -35,6 +35,28 @@ public class ContactFormWidget : Widget
 }
 ```
 
+Then you can call your Widget from your view:
+
+```csharp
+@inject Antaris.AspNetCore.Mvc.Widgets.IWidgetHelper Widget
+
+@await Widget.InvokeAsync("ContactForm")
+```
+
+Arguments can be provided through the model binder, or optionall you can pass them in as an anonymous object, e.g.:
+
+```csharp
+@await Widget.InvokeAsync("ContactForm", new { product })
+
+//...
+  public IWidgetResult InvokeGet(Product product)
+  {
+  
+  }
+```
+
+Arguments provided at invocation are used over model binder-sourced arguments.
+
 Widgets can be used to create isolated units of logic that can render and respond independently of the parent page.
 
 **THIS IS A PROTOTYPE**
