@@ -1,0 +1,16 @@
+﻿@model SampleWidgetApplication.ViewModels.ContactFormViewModel
+<form method="post">
+    <div class="form-group">
+        <label asp-for="Name" />
+        <input asp-for="Name" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Email" />
+        <input asp-for="Email" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <button type="submit">Send</button>
+    </div>
+</form>
