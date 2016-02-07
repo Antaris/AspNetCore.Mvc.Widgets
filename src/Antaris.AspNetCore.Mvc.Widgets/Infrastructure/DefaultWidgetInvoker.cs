@@ -85,7 +85,7 @@
                 result = InvokeSyncCore(methodInfo, context);
             }
 
-            return result.ExecuteAsync(context);
+            await result.ExecuteAsync(context);
         }
 
         /// <summary>
