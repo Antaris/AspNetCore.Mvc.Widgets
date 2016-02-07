@@ -52,7 +52,9 @@
             {
                 if (_url == null)
                 {
-                    _url = HttpContext?.RequestServices?.GetRequiredService<IUrlHelper>();
+                    var services = WidgetContext.ViewContext?.HttpContext?.RequestServices;
+                    var factory = services?.GetRequiredService<IUrlHelperFactory>();
+                    _url = factory?.GetUrlHelper(WidgetContext.ViewContext);
                 }
 
                 return _url;

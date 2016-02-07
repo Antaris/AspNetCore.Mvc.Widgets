@@ -1,11 +1,13 @@
 ﻿namespace Antaris.AspNetCore.Mvc.Widgets.Infrastructure
 {
     using System;
+    using System.Collections.Generic;
     using System.IO;
     using Microsoft.AspNet.Mvc.ModelBinding;
     using Microsoft.AspNet.Mvc.Rendering;
     using Microsoft.AspNet.Mvc.ViewFeatures;
     using Microsoft.AspNet.Routing;
+    using Microsoft.Extensions.WebEncoders;
 
     /// <summary>
     /// Represents a context for tracking Widget execution.
@@ -18,7 +20,6 @@
         public WidgetContext()
         {
             WidgetDescriptor = new WidgetDescriptor();
-            Values = new RouteValueDictionary();
             ViewContext = new ViewContext();
         }
 
@@ -26,19 +27,30 @@
         /// Initialises a new instance of <see cref="WidgetContext"/>.
         /// </summary>
         /// <param name="widgetDescriptor">The widget descriptor.</param>
-        /// <param name="values">The set of provided invocation values.</param>
+        /// <param name="arguments">The widget arguments.</param>
+        /// <param name="htmlEncoder">The HTML encoder.</param>
         /// <param name="viewContext">The view context.</param>
         /// <param name="writer">The text writer.</param>
-        public WidgetContext(WidgetDescriptor widgetDescriptor, RouteValueDictionary values, ViewContext viewContext, TextWriter writer)
+        public WidgetContext(
+            WidgetDescriptor widgetDescriptor, 
+            IDictionary<string, object> arguments, 
+            HtmlEncoder htmlEncoder,
+            ViewContext viewContext, 
+            TextWriter writer)
         {
             if (widgetDescriptor == null)
             {
                 throw new ArgumentNullException(nameof(widgetDescriptor));
             }
 
-            if (values == null)
+            if (arguments == null)
             {
-                throw new ArgumentNullException(nameof(values));
+                throw new ArgumentNullException(nameof(arguments));
+            }
+
+            if (htmlEncoder == null)
+            {
+                throw new ArgumentNullException(nameof(htmlEncoder));
             }
 
             if (viewContext == null)
@@ -52,7 +64,8 @@
             }
 
             WidgetDescriptor = widgetDescriptor;
-            Values = values;
+            Arguments = arguments;
+            HtmlEncoder = htmlEncoder;
 
             ViewContext = new ViewContext(
                 viewContext,
@@ -62,14 +75,19 @@
         }
 
         /// <summary>
+        /// Gets or sets the set of invocation-provided values.
+        /// </summary>
+        public IDictionary<string, object> Arguments { get; set; }
+
+        /// <summary>
+        /// Gets or sets the HTML encoder.
+        /// </summary>
+        public HtmlEncoder HtmlEncoder { get; set; }
+
+        /// <summary>
         /// Gets the model state dictionary.
         /// </summary>
         public ModelStateDictionary ModelState => ViewContext?.ModelState;
-
-        /// <summary>
-        /// Gets or sets the set of invocation-provided values.
-        /// </summary>
-        public RouteValueDictionary Values { get; set; }
 
         /// <summary>
         /// Gets or sets the view context.

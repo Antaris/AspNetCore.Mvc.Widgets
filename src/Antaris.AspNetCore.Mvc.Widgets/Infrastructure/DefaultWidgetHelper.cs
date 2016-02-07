@@ -2,10 +2,14 @@
 {
     using System;
     using System.IO;
+    using System.Reflection;
     using System.Threading.Tasks;
     using Microsoft.AspNet.Mvc.Rendering;
     using Microsoft.AspNet.Mvc.ViewFeatures.Internal;
-    using Microsoft.AspNet.Routing;
+    using Microsoft.Extensions.Internal;
+    using Microsoft.Extensions.WebEncoders;
+    using Microsoft.AspNet.Html.Abstractions;
+    using Antaris.AspNetCore.Mvc.Widgets.Internal;
 
     /// <summary>
     /// Provides a default implementation of a widget helper.
@@ -13,8 +17,10 @@
     public class DefaultWidgetHelper : IWidgetHelper, ICanHasViewContext
     {
         private readonly IWidgetDescriptorCollectionProvider _descriptorProvider;
+        private readonly HtmlEncoder _htmlEncoder;
         private readonly IWidgetInvokerFactory _invokerFactory;
         private readonly IWidgetSelector _selector;
+        private readonly IViewBufferScope _viewBufferScope;
         private ViewContext _viewContext;
 
         /// <summary>
@@ -23,11 +29,21 @@
         /// <param name="descriptorProvider">The widget descriptor collection provider.</param>
         /// <param name="invokerFactory">The invoker factory.</param>
         /// <param name="selector">The selector.</param>
-        public DefaultWidgetHelper(IWidgetDescriptorCollectionProvider descriptorProvider, IWidgetInvokerFactory invokerFactory, IWidgetSelector selector)
+        public DefaultWidgetHelper(
+            IWidgetDescriptorCollectionProvider descriptorProvider, 
+            HtmlEncoder htmlEncoder,
+            IWidgetInvokerFactory invokerFactory, 
+            IWidgetSelector selector, 
+            IViewBufferScope viewBufferScope)
         {
             if (descriptorProvider == null)
             {
                 throw new ArgumentNullException(nameof(descriptorProvider));
+            }
+
+            if (htmlEncoder == null)
+            {
+                throw new ArgumentNullException(nameof(htmlEncoder));
             }
 
             if (invokerFactory == null)
@@ -40,9 +56,16 @@
                 throw new ArgumentNullException(nameof(selector));
             }
 
+            if (viewBufferScope == null)
+            {
+                throw new ArgumentNullException(nameof(viewBufferScope));
+            }
+
             _descriptorProvider = descriptorProvider;
+            _htmlEncoder = htmlEncoder;
             _invokerFactory = invokerFactory;
             _selector = selector;
+            _viewBufferScope = viewBufferScope;
         }
 
         /// <inheritdoc />
@@ -52,83 +75,85 @@
         }
 
         /// <inheritdoc />
-        public HtmlString Invoke(Type widgetType, object values = null)
+        public Task<IHtmlContent> InvokeAsync(Type widgetType, object arguments = null)
         {
+            if (widgetType == null)
+            {
+                throw new ArgumentNullException(nameof(widgetType));
+            }
+
             var descriptor = SelectWidget(widgetType);
 
-            using (var writer = new StringWriter())
+            if (descriptor == null)
             {
-                InvokeCore(writer, descriptor, values);
-                return new HtmlString(writer.ToString());
+                throw new InvalidOperationException($"Cannot find widget of type '{widgetType.FullName}");
             }
+
+            return InvokeCoreAsync(descriptor, null, arguments);
         }
 
         /// <inheritdoc />
-        public HtmlString Invoke(string name, object values = null)
+        public Task<IHtmlContent> InvokeAsync(Type widgetType, string id, object arguments = null)
         {
-            var descriptor = SelectWidget(name);
-
-            using (var writer = new StringWriter())
+            if (widgetType == null)
             {
-                InvokeCore(writer, descriptor, values);
-                return new HtmlString(writer.ToString());
+                throw new ArgumentNullException(nameof(widgetType));
             }
-        }
 
-        /// <inheritdoc />
-        public async Task<HtmlString> InvokeAsync(Type widgetType, object values = null)
-        {
+            if (id == null)
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
+
             var descriptor = SelectWidget(widgetType);
 
-            using (var writer = new StringWriter())
+            if (descriptor == null)
             {
-                await InvokeCoreAsync(writer, descriptor, values);
-                return new HtmlString(writer.ToString());
+                throw new InvalidOperationException($"Cannot find widget of type '{widgetType.FullName}");
             }
+
+            return InvokeCoreAsync(descriptor, id, arguments);
         }
 
         /// <inheritdoc />
-        public async Task<HtmlString> InvokeAsync(string name, object values = null)
+        public Task<IHtmlContent> InvokeAsync(string name, object arguments = null)
         {
-            var descriptor = SelectWidget(name);
-
-            using (var writer = new StringWriter())
+            if (name == null)
             {
-                await InvokeCoreAsync(writer, descriptor, values);
-                return new HtmlString(writer.ToString());
+                throw new ArgumentNullException(nameof(name));
             }
+
+            var descriptor = _selector.SelectWidget(name);
+
+            if (descriptor == null)
+            {
+                throw new InvalidOperationException($"Cannot find widget '{name}");
+            }
+
+            return InvokeCoreAsync(descriptor, null, arguments);
         }
 
         /// <inheritdoc />
-        public void RenderInvoke(Type widgetType, object values = null)
+        public Task<IHtmlContent> InvokeAsync(string name, string id, object arguments = null)
         {
-            var descriptor = SelectWidget(widgetType);
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
 
-            InvokeCore(_viewContext.Writer, descriptor, values);
-        }
+            if (id == null)
+            {
+                throw new ArgumentNullException(nameof(id));
+            }
 
-        /// <inheritdoc />
-        public void RenderInvoke(string name, object values = null)
-        {
-            var descriptor = SelectWidget(name);
+            var descriptor = _selector.SelectWidget(name);
 
-            InvokeCore(_viewContext.Writer, descriptor, values);
-        }
+            if (descriptor == null)
+            {
+                throw new InvalidOperationException($"Cannot find widget '{name}");
+            }
 
-        /// <inheritdoc />
-        public Task RenderInvokeAsync(Type widgetType, object values = null)
-        {
-            var descriptor = SelectWidget(widgetType);
-
-            return InvokeCoreAsync(_viewContext.Writer, descriptor, values);
-        }
-
-        /// <inheritdoc />
-        public Task RenderInvokeAsync(string name, object values = null)
-        {
-            var descriptor = SelectWidget(name);
-
-            return InvokeCoreAsync(_viewContext.Writer, descriptor, values);
+            return InvokeCoreAsync(descriptor, id, arguments);
         }
 
         /// <summary>
@@ -136,44 +161,32 @@
         /// </summary>
         /// <param name="writer">The target text writer.</param>
         /// <param name="descriptor">The widget descriptor.</param>
-        /// <param name="values">The set of values to provide to the widget.</param>
+        /// <param name="arguments">The set of values to provide to the widget.</param>
         /// <returns>The task instance.</returns>
-        private Task InvokeCoreAsync(TextWriter writer, WidgetDescriptor descriptor, object values = null)
+        private async Task<IHtmlContent> InvokeCoreAsync(WidgetDescriptor descriptor, string id, object arguments = null)
         {
-            var context = new WidgetContext(descriptor, new RouteValueDictionary(values), _viewContext, writer);
-            var invoker = _invokerFactory.CreateInstance(context);
-
-            return invoker.InvokeAsync(context);
-        }
-
-        /// <summary>
-        /// Invokes a widget synchronously.
-        /// </summary>
-        /// <param name="writer">The target text writer.</param>
-        /// <param name="descriptor">The widget descriptor.</param>
-        /// <param name="values">The set of values to provide to the widget.</param>
-        private void InvokeCore(TextWriter writer, WidgetDescriptor descriptor, object values = null)
-        {
-            var context = new WidgetContext(descriptor, new RouteValueDictionary(values), _viewContext, writer);
-            var invoker = _invokerFactory.CreateInstance(context);
-
-            invoker.Invoke(context);
-        }
-
-        /// <summary>
-        /// Selects a widget based on a name.
-        /// </summary>
-        /// <param name="name">The widget name.</param>
-        /// <returns>The widget descriptor.</returns>
-        private WidgetDescriptor SelectWidget(string name)
-        {
-            var descriptor = _selector.SelectWidget(name);
-            if (descriptor == null)
+            var viewBuffer = new ViewBuffer(_viewBufferScope, descriptor.FullName);
+            using (var writer = new HtmlContentWrapperTextWriter(viewBuffer, _viewContext.Writer.Encoding))
             {
-                throw new InvalidOperationException("Cannot find widget named " + name);
-            }
+                var context = new WidgetContext(
+                    descriptor,
+                    PropertyHelper.ObjectToDictionary(arguments),
+                    _htmlEncoder,
+                    _viewContext,
+                    writer)
+                {
+                    WidgetId = id
+                };
 
-            return descriptor;
+                var invoker = _invokerFactory.CreateInstance(context);
+                if (invoker == null)
+                {
+                    throw new InvalidOperationException("IWidgetComponentFactory return null.");
+                }
+
+                await invoker.InvokeAsync(context);
+                return writer.ContentBuilder;
+            }
         }
 
         /// <summary>
@@ -183,10 +196,13 @@
         /// <returns>The widget descriptor.</returns>
         private WidgetDescriptor SelectWidget(Type widgetType)
         {
+            var widgetTypeInfo = widgetType.GetTypeInfo();
+
             var descriptors = _descriptorProvider.Widgets;
+
             foreach (var descriptor in descriptors.Items)
             {
-                if (descriptor.Type == widgetType)
+                if (descriptor.TypeInfo == widgetTypeInfo)
                 {
                     return descriptor;
                 }

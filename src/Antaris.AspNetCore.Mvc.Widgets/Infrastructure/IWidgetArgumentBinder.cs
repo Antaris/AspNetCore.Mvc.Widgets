@@ -16,6 +16,6 @@
         /// <param name="method">The method to invoke.</param>
         /// <param name="values">The set of invocation-provided values.</param>
         /// <returns>The set of bound arguments as a deferred task result.</returns>
-        Task<IDictionary<string, object>> BindArgumentsAsync(WidgetContext context, MethodInfo method, IDictionary<string, object> values);
+        Task<object[]> BindArgumentsAsync(WidgetContext context, MethodInfo method, IDictionary<string, object> values);
     }
 }

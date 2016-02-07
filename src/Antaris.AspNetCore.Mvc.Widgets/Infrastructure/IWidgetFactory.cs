@@ -1,22 +1,22 @@
 ﻿namespace Antaris.AspNetCore.Mvc.Widgets.Infrastructure
 {
     /// <summary>
-    /// Defines the required contract for implementing a widget activator.
+    /// Defines the required contract for implementing a widget factory.
     /// </summary>
-    public interface IWidgetActivator
+    public interface IWidgetFactory
     {
         /// <summary>
-        /// Creates a new instance of the target widget.
+        /// Creates a new widget for the specified <paramref name="context"/>
         /// </summary>
         /// <param name="context">The widget context.</param>
         /// <returns>The widget instance.</returns>
-        object Create(WidgetContext context);
+        object CreateWidget(WidgetContext context);
 
         /// <summary>
         /// Releases a widget instance.
         /// </summary>
         /// <param name="context">The widget context.</param>
         /// <param name="widget">The widget instance.</param>
-        void Release(WidgetContext context, object widget);
+        void ReleaseWidget(WidgetContext context, object widget);
     }
 }

@@ -1,47 +1,71 @@
 ﻿namespace Antaris.AspNetCore.Mvc.Widgets.Infrastructure
 {
     using System;
-    using System.Collections.Concurrent;
-    using System.Reflection;
-    using Microsoft.Extensions.Internal;
-
+    using Microsoft.AspNet.Mvc.Infrastructure;
     /// <summary>
     /// Provides a default implementation of a widget activator.
     /// </summary>
     public class DefaultWidgetActivator : IWidgetActivator
     {
-        private readonly Func<Type, PropertyActivator<WidgetContext>[]> _getPropertiesToActivate;
-        private readonly ConcurrentDictionary<Type, PropertyActivator<WidgetContext>[]> _injectActions;
+        private readonly ITypeActivatorCache _typeActivatorCache;
 
         /// <summary>
         /// Initialises a new instance of <see cref="DefaultWidgetActivator"/>
         /// </summary>
-        public DefaultWidgetActivator()
+        /// <param name="typeActivatorCache">The type activator cache.</param>
+        public DefaultWidgetActivator(ITypeActivatorCache typeActivatorCache)
         {
-            _injectActions = new ConcurrentDictionary<Type, PropertyActivator<WidgetContext>[]>();
-            _getPropertiesToActivate = type => PropertyActivator<WidgetContext>.GetPropertiesToActivate(type, typeof(WidgetContextAttribute), CreateActivateInfo);
-        }
-
-        /// <inheritdoc />
-        public virtual void Activate(object widget, WidgetContext context)
-        {
-            var propertiesToActivate = _injectActions.GetOrAdd(widget.GetType(), _getPropertiesToActivate);
-
-            for (int i = 0; i < propertiesToActivate.Length; i++)
+            if (typeActivatorCache == null)
             {
-                var activateInfo = propertiesToActivate[i];
-                activateInfo.Activate(widget, context);
+                throw new ArgumentNullException(nameof(typeActivatorCache));
             }
+
+            _typeActivatorCache = typeActivatorCache;
         }
 
-        /// <summary>
-        /// Creates a new property activator.
-        /// </summary>
-        /// <param name="property">The property info.</param>
-        /// <returns>The property activator.</returns>
-        private PropertyActivator<WidgetContext> CreateActivateInfo(PropertyInfo property)
+        /// <inheritdocs />
+        public virtual object Create(WidgetContext context)
         {
-            return new PropertyActivator<WidgetContext>(property, ctx => ctx);
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            var widgetType = context.WidgetDescriptor.TypeInfo;
+
+            if (widgetType.IsValueType
+                || widgetType.IsInterface
+                || widgetType.IsAbstract ||
+                (widgetType.IsGenericType && widgetType.IsGenericTypeDefinition))
+            {
+                throw new InvalidOperationException($"The type '{widgetType.FullName}' cannot be activated.");
+            }
+
+            var widget = _typeActivatorCache.CreateInstance<object>(
+                context.ViewContext.HttpContext.RequestServices,
+                context.WidgetDescriptor.TypeInfo.AsType());
+
+            return widget;
+        }
+
+        /// <inheritdocs />
+        public virtual void Release(WidgetContext context, object widget)
+        {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            if (widget == null)
+            {
+                throw new ArgumentNullException(nameof(widget));
+            }
+
+            var disposable = widget as IDisposable;
+            if (disposable != null)
+            {
+                disposable.Dispose();
+            }
         }
     }
 }

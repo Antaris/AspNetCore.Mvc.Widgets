@@ -49,7 +49,7 @@
         }
 
         /// <inheritdocs />
-        public async Task<IDictionary<string, object>> BindArgumentsAsync(WidgetContext context, MethodInfo method, IDictionary<string, object> values)
+        public async Task<object[]> BindArgumentsAsync(WidgetContext context, MethodInfo method, IDictionary<string, object> values)
         {
             var bindingContext = new OperationBindingContext
             {
@@ -61,14 +61,15 @@
                 ValueProvider = await CompositeValueProvider.CreateAsync(_options.ValueProviderFactories, new ValueProviderFactoryContext(context.ViewContext.HttpContext, context.ViewContext.RouteData.Values))
             };
 
-            var arguments = new Dictionary<string, object>(StringComparer.Ordinal);
             var parameters = method.GetParameters();
+            var arguments = new object[parameters.Length];
+            int index = 0;
 
             foreach (var parameter in parameters)
             {
                 if (values.ContainsKey(parameter.Name))
                 {
-                    arguments.Add(parameter.Name, values[parameter.Name]);
+                    arguments[index] = values[parameter.Name];
                 }
                 else
                 {
@@ -90,13 +91,15 @@
                     if (result.IsModelSet)
                     {
                         _objectModelValidator.Validate(bindingContext.ValidatorProvider, context.ModelState, modelBindingContext.ValidationState, result.Key, result.Model);
-                        arguments.Add(parameter.Name, result.Model);
+                        arguments[index] = result.Model;
                     }
                     else
                     {
-                        arguments.Add(parameter.Name, Activator.CreateInstance(parameter.ParameterType));
+                        arguments[index] = Activator.CreateInstance(parameter.ParameterType);
                     }
                 }
+
+                index++;
             }
 
             return arguments;

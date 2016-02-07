@@ -1,10 +1,14 @@
 ﻿namespace Antaris.AspNetCore.Mvc.Widgets.Infrastructure
 {
     using System;
+    using System.Collections.Generic;
+    using System.Diagnostics;
+    using System.Reflection;
 
     /// <summary>
     /// Provides a description of a Widget.
     /// </summary>
+    [DebuggerDisplay("{DisplayName}")]
     public class WidgetDescriptor
     {
         private string _displayName;
@@ -19,7 +23,7 @@
             {
                 if (_displayName == null)
                 {
-                    _displayName = Type?.FullName;
+                    _displayName = TypeInfo?.FullName;
                 }
 
                 return _displayName;
@@ -36,9 +40,19 @@
         }
 
         /// <summary>
+        /// Gets or sets the set of GET methods.
+        /// </summary>
+        public IDictionary<string, MethodInfo> GetMethods { get; set; }
+
+        /// <summary>
         /// Gets or sets the full name.
         /// </summary>
         public string FullName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the set of POST methods.
+        /// </summary>
+        public IDictionary<string, MethodInfo> PostMethods { get; set; }
 
         /// <summary>
         /// Gets or sets the short name.
@@ -48,6 +62,6 @@
         /// <summary>
         /// Gets or sets the type.
         /// </summary>
-        public Type Type { get; set; }
+        public TypeInfo TypeInfo { get; set; }
     }
 }

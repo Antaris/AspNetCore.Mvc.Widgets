@@ -1,11 +1,9 @@
 ﻿namespace Antaris.AspNetCore.Mvc.Widgets
 {
     using System;
-    using System.Net;
     using System.Threading.Tasks;
-    using Microsoft.AspNet.Mvc.Rendering;
+    using Microsoft.AspNet.Mvc.Internal;
     using Antaris.AspNetCore.Mvc.Widgets.Infrastructure;
-
     /// <summary>
     /// Renders content directly from a widget.
     /// </summary>
@@ -17,23 +15,12 @@
         /// <param name="content">The raw content.</param>
         public ContentWidgetResult(string content)
         {
-            Content = content ?? string.Empty;
-            EncodedContent = new HtmlString(WebUtility.HtmlEncode(Content));
-        }
-
-        /// <summary>
-        /// Initialises a new instance of <see cref="ContentWidgetResult"/>.
-        /// </summary>
-        /// <param name="encodedContent"></param>
-        public ContentWidgetResult(HtmlString encodedContent)
-        {
-            if (encodedContent == null)
+            if (content == null)
             {
-                throw new ArgumentNullException(nameof(encodedContent));
+                throw new ArgumentNullException(nameof(content));
             }
 
-            EncodedContent = encodedContent;
-            Content = WebUtility.HtmlDecode(encodedContent.ToString());
+            Content = content;
         }
 
         /// <summary>
@@ -41,21 +28,23 @@
         /// </summary>
         public string Content { get; }
 
-        /// <summary>
-        /// Gets the encoded content.
-        /// </summary>
-        public HtmlString EncodedContent { get; }
-
         /// <inheritdoc />
         public void Execute(WidgetContext context)
         {
-            context.Writer.Write(EncodedContent.ToString());
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            context.HtmlEncoder.Encode(context.Writer, Content);
         }
 
         /// <inheritdoc />
         public Task ExecuteAsync(WidgetContext context)
         {
-            return context.Writer.WriteAsync(EncodedContent.ToString());
+            Execute(context);
+
+            return TaskCache.CompletedTask;
         }
     }
 }

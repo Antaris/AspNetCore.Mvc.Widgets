@@ -8,12 +8,6 @@
     public interface IWidgetInvoker
     {
         /// <summary>
-        /// Invokes a widget synchronously.
-        /// </summary>
-        /// <param name="context">The widget context.</param>
-        void Invoke(WidgetContext context);
-
-        /// <summary>
         /// Invokes a widget asynchronously.
         /// </summary>
         /// <param name="context">The widget context.</param>

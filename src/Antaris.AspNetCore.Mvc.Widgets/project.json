@@ -7,14 +7,14 @@
   "licenseUrl": "",
 
   "dependencies": {
-    "Microsoft.AspNet.Mvc.Core": "6.0.0-rc1-final",
-    "Microsoft.AspNet.Mvc.ViewFeatures": "6.0.0-rc1-final",
+    "Microsoft.AspNet.Mvc.Core": "6.0.0-*",
+    "Microsoft.AspNet.Mvc.ViewFeatures": "6.0.0-*",
     "Microsoft.Extensions.PropertyActivator.Sources": {
-      "version": "1.0.0-rc1-final",
+      "version": "1.0.0-*",
       "type": "build"
     },
     "Microsoft.Extensions.PropertyHelper.Sources": {
-      "version": "1.0.0-rc1-final",
+      "version": "1.0.0-*",
       "type": "build"
     }
   },
