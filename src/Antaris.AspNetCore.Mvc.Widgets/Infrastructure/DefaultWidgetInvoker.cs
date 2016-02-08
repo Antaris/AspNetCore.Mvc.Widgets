@@ -68,21 +68,21 @@
                 throw new ArgumentNullException(nameof(context));
             }
 
-            var methodInfo = ResolveMethod(context.WidgetDescriptor);
-            if (methodInfo == null)
+            var method = ResolveMethod(context);
+            if (method == null)
             {
                 throw new ArgumentNullException("Unable to determine target widget method.");
             }
 
-            var isAsync = typeof(Task).GetTypeInfo().IsAssignableFrom(methodInfo.ReturnType.GetTypeInfo());
+            var isAsync = typeof(Task).GetTypeInfo().IsAssignableFrom(method.MethodInfo.ReturnType.GetTypeInfo());
             IWidgetResult result;
             if (isAsync)
             {
-                result = await InvokeAsyncCore(methodInfo, context);
+                result = await InvokeAsyncCore(method.MethodInfo, context);
             }
             else
             {
-                result = InvokeSyncCore(methodInfo, context);
+                result = InvokeSyncCore(method.MethodInfo, context);
             }
 
             await result.ExecuteAsync(context);
@@ -110,7 +110,7 @@
             var htmlContent = value as IHtmlContent;
             if (htmlContent != null)
             {
-                return new ContentWidgetResult(htmlContent);
+                return new HtmlContentWidgetResult(htmlContent);
             }
 
             throw new InvalidOperationException($"Widgets only support returning {typeof(string).Name}, {typeof(IHtmlContent).Name} or {typeof(IWidgetResult).Name}");
@@ -188,6 +188,64 @@
 
                 return widgetResult;
             }
+        }
+
+        /// <summary>
+        /// Resolves the method that will be executed by the widget.
+        /// </summary>
+        /// <param name="context">The widget context.</param>
+        /// <returns>The method to execute.</returns>
+        private WidgetMethodDescriptor ResolveMethod(WidgetContext context)
+        {
+            // We need to resolve some state and a widget id.
+            var request = context.ViewContext?.HttpContext?.Request;
+            string id = null;
+            string state = null;
+            WidgetHttpMethod httpMethod = WidgetHttpMethod.Get;
+
+            if (request != null)
+            {
+                httpMethod = string.Equals(request.Method, "post", StringComparison.OrdinalIgnoreCase)
+                    ? WidgetHttpMethod.Post : httpMethod;
+
+                if (httpMethod == WidgetHttpMethod.Post)
+                {
+                    state = request.Form[WidgetConventions.WidgetState];
+                    id = request.Form[WidgetConventions.WidgetTarget];
+
+                    if (!string.Equals(id, context.WidgetId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Enforce we only use GET methods.
+                        httpMethod = WidgetHttpMethod.Get;
+                    }
+                }
+            }
+
+            /*
+             * Rank:
+             * Invoke{State}{Method}Async/Invoke{State}{Method}
+             * Invoke{State}Async/Invoke{State}
+             * Invoke{Method}Async/Invoke{Method}
+             * InvokeAsync/Invoke
+             */
+            
+            for (int i = 0; i < context.WidgetDescriptor.Methods.Length; i++)
+            {
+                var descriptor = context.WidgetDescriptor.Methods[i];
+
+                if (descriptor.HttpMethod != httpMethod && descriptor.HttpMethod != WidgetHttpMethod.Any)
+                {
+                    continue;
+                }
+
+                if (string.Equals(descriptor.State, state))
+                {
+                    // This method will work for us.
+                    return descriptor;
+                }
+            }
+
+            return null;
         }
     }
 }

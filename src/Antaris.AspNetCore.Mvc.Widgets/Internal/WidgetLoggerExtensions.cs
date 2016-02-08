@@ -4,10 +4,10 @@
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using Microsoft.AspNet.Mvc.ViewFeatures;
     using Microsoft.AspNet.Mvc.ViewEngines;
     using Microsoft.Extensions.Logging;
     using Infrastructure;
+
     internal static class WidgetsLoggerExtensions
     {
         private static readonly double TimestampToTicks = TimeSpan.TicksPerSecond / (double)Stopwatch.Frequency;

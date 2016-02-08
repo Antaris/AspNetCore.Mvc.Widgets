@@ -4,6 +4,7 @@
     using System.Threading.Tasks;
     using Microsoft.AspNet.Mvc.Internal;
     using Antaris.AspNetCore.Mvc.Widgets.Infrastructure;
+
     /// <summary>
     /// Renders content directly from a widget.
     /// </summary>

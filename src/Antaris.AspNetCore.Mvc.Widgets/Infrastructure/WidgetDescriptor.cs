@@ -40,9 +40,9 @@
         }
 
         /// <summary>
-        /// Gets or sets the set of GET methods.
+        /// Gets the internal ID for the widget.
         /// </summary>
-        public IDictionary<string, MethodInfo> GetMethods { get; set; }
+        public string Id { get; } = Guid.NewGuid().ToString();
 
         /// <summary>
         /// Gets or sets the full name.
@@ -50,9 +50,9 @@
         public string FullName { get; set; }
 
         /// <summary>
-        /// Gets or sets the set of POST methods.
+        /// Gets or sets the set of methods for this widget.
         /// </summary>
-        public IDictionary<string, MethodInfo> PostMethods { get; set; }
+        public WidgetMethodDescriptor[] Methods { get; set; }
 
         /// <summary>
         /// Gets or sets the short name.

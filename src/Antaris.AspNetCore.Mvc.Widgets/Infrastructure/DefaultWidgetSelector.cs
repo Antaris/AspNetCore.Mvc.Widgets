@@ -81,7 +81,7 @@
                     var matchedTypes = new List<string>();
                     foreach (var candidate in matches)
                     {
-                        matchedTypes.Add($"Type: {candidate.Type.FullName}, Name: {candidate.FullName}");
+                        matchedTypes.Add($"Type: {candidate.TypeInfo.FullName}, Name: {candidate.FullName}");
                     }
 
                     var typeNames = string.Join(Environment.NewLine, matchedTypes);

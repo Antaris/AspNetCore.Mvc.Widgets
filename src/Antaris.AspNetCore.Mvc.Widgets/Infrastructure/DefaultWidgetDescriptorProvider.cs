@@ -4,11 +4,10 @@
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using System.Threading.Tasks;
     using Microsoft.AspNet.Mvc.Infrastructure;
     using Antaris.AspNetCore.Mvc.Widgets.Internal;
-
-    using StateMethodDictionary = System.Collections.Generic.Dictionary<string, System.Reflection.MethodInfo>;
-    using System.Threading.Tasks;
+    
     /// <summary>
     /// Provides a default implementation of a widget descriptor provider.
     /// </summary>
@@ -66,10 +65,8 @@
                 ShortName = WidgetConventions.GetWidgetName(typeInfo),
                 TypeInfo = typeInfo
             };
-
-            var methods = FindMethods(typeInfo);
-            descriptor.GetMethods = methods.Item1;
-            descriptor.PostMethods = methods.Item2;
+            
+            descriptor.Methods = FindMethods(typeInfo);
 
             return descriptor;
         }
@@ -79,14 +76,13 @@
         /// </summary>
         /// <param name="typeInfo">The widget typeinfo.</param>
         /// <returns>The get and post methods.</returns>
-        private static Tuple<StateMethodDictionary, StateMethodDictionary> FindMethods(TypeInfo typeInfo)
+        private static WidgetMethodDescriptor[] FindMethods(TypeInfo typeInfo)
         {
-            var get = new StateMethodDictionary();
-            var post = new StateMethodDictionary();
-
             var methods = typeInfo.DeclaredMethods
                 .Where(m => m.Name.StartsWith(MethodPrefix, StringComparison.Ordinal) && !m.IsStatic && m.IsPublic)
                 .ToArray();
+
+            var descriptors = new List<WidgetMethodDescriptor>(methods.Length);
 
             /*
              * Possible method names ('Form' as example state):
@@ -107,12 +103,18 @@
 
             for (int i = 0; i < methods.Length; i++)
             {
-                bool? isGet = null;
                 var method = methods[i];
+                var descriptor = new WidgetMethodDescriptor()
+                {
+                    MethodInfo = method,
+                    Rank = 1
+                };
+
+                var httpMethod = WidgetHttpMethod.Any;
                 string name = method.Name.Substring(MethodPrefix.Length);
                 string state = string.Empty;
 
-                bool isAsync = method.Name.EndsWith(AsyncMethodSuffix, StringComparison.Ordinal);
+                bool isAsync = descriptor.IsAsync = method.Name.EndsWith(AsyncMethodSuffix, StringComparison.Ordinal);
 
                 if (isAsync)
                 {
@@ -121,30 +123,34 @@
 
                 if (name.EndsWith(MethodGetPattern, StringComparison.Ordinal))
                 {
-                    isGet = true;
+                    descriptor.Rank += 1;
+
+                    httpMethod = WidgetHttpMethod.Get;
                     name = name.Substring(0, name.Length - MethodGetPattern.Length);
                 }
                 else if (name.EndsWith(MethodPostPattern, StringComparison.Ordinal))
                 {
-                    isGet = false;
+                    descriptor.Rank += 1;
+
+                    httpMethod = WidgetHttpMethod.Post;
                     name = name.Substring(0, name.Length - MethodPostPattern.Length);
                 }
+
+                descriptor.HttpMethod = httpMethod;
 
                 ValidateMethod(method, isAsync);
 
                 state = name;
-                if (isGet == null || isGet == true)
+                if (!string.IsNullOrWhiteSpace(state))
                 {
-                    get.Add(state, method);
+                    descriptor.Rank += 2;
+                    descriptor.State = state;
                 }
-                
-                if (isGet == null || isGet == false)
-                {
-                    post.Add(state, method);
-                }
+
+                descriptors.Add(descriptor);
             }
 
-            return Tuple.Create(get, post);
+            return descriptors.OrderByDescending(r => r.Rank).ToArray();
         }
         
         /// <summary>
