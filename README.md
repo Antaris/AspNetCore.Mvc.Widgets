@@ -76,6 +76,11 @@ And when generating the form, add the `widget-form` or `widget-state` attributes
 </form>
 ```
 
+You would also need to add the tag helper:
+
+```csharp
+@addTagHelper *, Antaris.AspNetCore.Mvc.widgets
+```
 
 Multi-state Widgets
 ====
