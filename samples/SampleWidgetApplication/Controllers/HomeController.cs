@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNet.Mvc;
+using Microsoft.AspNetCore.Mvc;
 
 namespace SampleWidgetApplication.Controllers
 {
@@ -25,6 +25,11 @@ namespace SampleWidgetApplication.Controllers
             ViewData["Message"] = "Your contact page.";
 
             return View();
+        }
+
+        public IActionResult ContactDirect()
+        {
+            return this.Widget("ContactForm");   
         }
 
         public IActionResult Error()

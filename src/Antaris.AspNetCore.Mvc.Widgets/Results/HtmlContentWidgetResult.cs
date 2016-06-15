@@ -2,52 +2,35 @@
 {
     using System;
     using System.Threading.Tasks;
-    using Microsoft.AspNet.Html.Abstractions;
-    using Microsoft.AspNet.Mvc.Internal;
-    using Microsoft.AspNet.Mvc.ViewFeatures;
+    using Microsoft.AspNetCore.Html;
+    using Microsoft.AspNetCore.Mvc.Internal;
     using Antaris.AspNetCore.Mvc.Widgets.Infrastructure;
 
     /// <summary>
-    /// Renders HTML encoded content.
+    /// Renders content directly from a widget.
     /// </summary>
     public class HtmlContentWidgetResult : IWidgetResult
     {
         /// <summary>
         /// Initialises a new instance of <see cref="HtmlContentWidgetResult"/>.
         /// </summary>
-        /// <param name="encodedContent">The HTML encoded content.</param>
+        /// <param name="encodedContent">The encoded content.</param>
         public HtmlContentWidgetResult(IHtmlContent encodedContent)
         {
-            if (encodedContent == null)
-            {
-                throw new ArgumentNullException(nameof(encodedContent));
-            }
-
-            EncodedContent = encodedContent;
+            EncodedContent = Ensure.ArgumentNotNull(encodedContent, nameof(encodedContent));
         }
 
         /// <summary>
-        /// Gets the encoded content.
+        /// Gets the raw content.
         /// </summary>
         public IHtmlContent EncodedContent { get; }
 
         /// <inheritdoc />
         public void Execute(WidgetContext context)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
+            Ensure.ArgumentNotNull(context, nameof(context));
 
-            var htmlWriter = context.Writer as HtmlTextWriter;
-            if (htmlWriter == null)
-            {
-                EncodedContent.WriteTo(context.Writer, context.HtmlEncoder);
-            }
-            else
-            {
-                htmlWriter.Write(EncodedContent);
-            }
+            context.Writer.Write(EncodedContent);
         }
 
         /// <inheritdoc />

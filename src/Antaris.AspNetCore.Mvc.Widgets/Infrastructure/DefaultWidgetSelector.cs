@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Reflection;
 
     /// <summary>
     /// Provides a default implementation of a widget selector.
@@ -36,6 +37,21 @@
             }
 
             return _cache.SelectByShortName(widgetName);
+        }
+
+        /// <inheritdoc />
+        public WidgetDescriptor SelectWidget(TypeInfo widgetType)
+        {
+            var descriptors = _descriptorProvider.Widgets;
+            foreach (var descriptor in descriptors.Items)
+            {
+                if (descriptor.TypeInfo == widgetType)
+                {
+                    return descriptor;
+                }
+            }
+
+            return null;
         }
 
         private class WidgetDescriptorCache

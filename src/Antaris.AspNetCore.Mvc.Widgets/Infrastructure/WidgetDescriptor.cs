@@ -1,17 +1,22 @@
 ﻿namespace Antaris.AspNetCore.Mvc.Widgets.Infrastructure
 {
     using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
     using System.Reflection;
 
     /// <summary>
     /// Provides a description of a Widget.
     /// </summary>
-    [DebuggerDisplay("{DisplayName}")]
     public class WidgetDescriptor
     {
         private string _displayName;
+
+        /// <summary>
+        /// Initialises a new instance of <see cref="WidgetDescriptor"/>
+        /// </summary>
+        public WidgetDescriptor()
+        {
+            Id = Guid.NewGuid().ToString();
+        }
 
         /// <summary>
         /// Gets or sets the display name.
@@ -30,19 +35,9 @@
             }
             set
             {
-                if (string.IsNullOrEmpty(value))
-                {
-                    throw new ArgumentException("Display name must be provided.");
-                }
-
-                _displayName = value;
+                _displayName = Ensure.ArgumentNotNullOrEmpty(value, nameof(value));
             }
         }
-
-        /// <summary>
-        /// Gets the internal ID for the widget.
-        /// </summary>
-        public string Id { get; } = Guid.NewGuid().ToString();
 
         /// <summary>
         /// Gets or sets the full name.
@@ -50,9 +45,9 @@
         public string FullName { get; set; }
 
         /// <summary>
-        /// Gets or sets the set of methods for this widget.
+        /// Gets or sets a unique id for this descriptor.
         /// </summary>
-        public WidgetMethodDescriptor[] Methods { get; set; }
+        public string Id { get; set; }
 
         /// <summary>
         /// Gets or sets the short name.

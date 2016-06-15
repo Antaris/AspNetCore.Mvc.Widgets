@@ -1,11 +1,11 @@
 ﻿namespace Antaris.AspNetCore.Mvc.Widgets
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading.Tasks;
-    using Microsoft.AspNet.Mvc;
-    using Microsoft.AspNet.Mvc.ViewEngines;
-    using Microsoft.AspNet.Mvc.ViewFeatures;
-    using Microsoft.AspNet.Mvc.Rendering;
+    using Microsoft.AspNetCore.Mvc.ViewEngines;
+    using Microsoft.AspNetCore.Mvc.ViewFeatures;
+    using Microsoft.AspNetCore.Mvc.Rendering;
     using Microsoft.Extensions.DependencyInjection;
     using Antaris.AspNetCore.Mvc.Widgets.Infrastructure;
 
@@ -14,7 +14,7 @@
     /// </summary>
     public class ViewWidgetResult : IWidgetResult
     {
-        private const string ViewPath = "Widgets/{0}/{1}";
+        private const string ViewPathFormat = "Widgets/{0}/{1}";
         private const string DefaultViewName = "Default";
 
         /// <summary>
@@ -48,45 +48,40 @@
         /// <inheritdoc />
         public async Task ExecuteAsync(WidgetContext context)
         {
+            Ensure.ArgumentNotNull(context, nameof(context));
+
             var viewEngine = ViewEngine ?? ResolveViewEngine(context);
+            var viewContext = context.ViewContext;
             var viewData = ViewData ?? context.ViewData;
             bool isNullOrEmptyViewName = string.IsNullOrEmpty(ViewName);
 
-            string state = null; // TODO: Resolve from value provider?
-
-            string qualifiedViewName;
-            if (!isNullOrEmptyViewName && (ViewName[0] == '~' || ViewName[0] == '/'))
+            ViewEngineResult result = null;
+            IEnumerable<string> originalLocations = null;
+            if (!isNullOrEmptyViewName)
             {
-                qualifiedViewName = ViewName;
-            }
-            else
-            {
-                qualifiedViewName = string.Format(ViewPath, context.WidgetDescriptor.ShortName, isNullOrEmptyViewName ? (state ?? DefaultViewName) : ViewName);
+                result = viewEngine.GetView(viewContext.ExecutingFilePath, ViewName, isMainPage: false);
+                originalLocations = result.SearchedLocations;
             }
 
-            var view = FindView(context.ViewContext, viewEngine, qualifiedViewName);
-            var childViewContext = new ViewContext(
-                context.ViewContext,
-                view,
-                viewData,
-                context.Writer);
+            if (result == null || !result.Success)
+            {
+                var viewName = isNullOrEmptyViewName ? DefaultViewName : ViewName;
+                var qualifiedViewName = string.Format(ViewPathFormat, context.WidgetDescriptor.ShortName, viewName);
 
+                result = viewEngine.FindView(viewContext, qualifiedViewName, isMainPage: false);
+            }
+
+            var view = result.EnsureSuccessful(originalLocations).View;
             using (view as IDisposable)
             {
+                var childViewContext = new ViewContext(
+                    viewContext,
+                    view,
+                    ViewData ?? context.ViewData,
+
+                    context.Writer);
                 await view.RenderAsync(childViewContext);
             }
-        }
-
-        /// <summary>
-        /// Finds a view for the given name.
-        /// </summary>
-        /// <param name="context">The action context.</param>
-        /// <param name="viewEngine">The view engine.</param>
-        /// <param name="viewName">The view name.</param>
-        /// <returns>The resolved view instance.</returns>
-        private static IView FindView(ActionContext context, IViewEngine viewEngine, string viewName)
-        {
-            return viewEngine.FindPartialView(context, viewName).EnsureSuccessful().View;
         }
 
         /// <summary>

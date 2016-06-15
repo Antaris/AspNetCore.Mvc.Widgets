@@ -17,12 +17,7 @@
         /// <param name="descriptorProvider">The widget descriptor provider.</param>
         public DefaultWidgetDescriptorCollectionProvider(IWidgetDescriptorProvider descriptorProvider)
         {
-            if (descriptorProvider == null)
-            {
-                throw new ArgumentNullException(nameof(descriptorProvider));
-            }
-
-            _descriptorProvider = descriptorProvider;
+            _descriptorProvider = Ensure.ArgumentNotNull(descriptorProvider, nameof(descriptorProvider));
         }
 
         /// <inheritdoc />

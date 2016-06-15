@@ -6,7 +6,7 @@
     public interface IWidgetActivator
     {
         /// <summary>
-        /// Creates a new instance of the target widget.
+        /// Initialises a widget.
         /// </summary>
         /// <param name="context">The widget context.</param>
         /// <returns>The widget instance.</returns>

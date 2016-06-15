@@ -1,14 +1,21 @@
 ﻿{
   "version": "1.0.0-*",
   "description": "Provides a Widget execution model for ASP.NET Core MVC applications.",
-  "authors": [ "Matthew Abbott" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
+  "title": "ASP.NET Core MVC Widgets",
+
+  "packOptions": {
+    "summary": "Provides an alternative execution model to ViewComponents using self-contained Widgets",
+    "tags": [ "viewcomponents", "widgets", "aspnetcore", "aspnetcoremvc" ],
+    "owners": [ "Matthew Abbott" ],
+    "repository": {
+      "type": "git",
+      "url": "https://github.com/Antaris/AspNetCore.Mvc.Widgets"
+    }
+  },
 
   "dependencies": {
-    "Microsoft.AspNet.Mvc.Core": "6.0.0-*",
-    "Microsoft.AspNet.Mvc.ViewFeatures": "6.0.0-*",
+    "Microsoft.AspNetCore.Mvc.Core": "1.0.0-rc2-final",
+    "Microsoft.AspNetCore.Mvc.ViewFeatures": "1.0.0-rc2-final",
     "Microsoft.Extensions.PropertyActivator.Sources": {
       "version": "1.0.0-*",
       "type": "build"
@@ -20,15 +27,11 @@
   },
 
   "frameworks": {
-    "net451": {
-      "frameworkAssemblies": {
-        "System.Runtime": ""
-      }
-    },
-    "dotnet5.4": {
-      "dependencies": {
-        "System.Text.Encoding": "4.0.11-beta-23516"
-      }
+    "netstandard1.5": {
+      "imports": [
+        "dnxcore50",
+        "portable-net452+win81"
+      ]
     }
   }
 }

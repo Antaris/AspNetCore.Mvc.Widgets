@@ -1,13 +1,14 @@
 ﻿namespace Antaris.AspNetCore.Mvc.Widgets
 {
     using System.Security.Principal;
-    using Microsoft.AspNet.Http;
-    using Microsoft.AspNet.Mvc;
-    using Microsoft.AspNet.Mvc.ModelBinding;
-    using Microsoft.AspNet.Mvc.Rendering;
-    using Microsoft.AspNet.Mvc.ViewEngines;
-    using Microsoft.AspNet.Mvc.ViewFeatures;
-    using Microsoft.AspNet.Routing;
+    using Microsoft.AspNetCore.Http;
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.AspNetCore.Mvc.ModelBinding;
+    using Microsoft.AspNetCore.Mvc.Rendering;
+    using Microsoft.AspNetCore.Mvc.ViewEngines;
+    using Microsoft.AspNetCore.Mvc.ViewFeatures;
+    using Microsoft.AspNetCore.Mvc.ViewFeatures.Internal;
+    using Microsoft.AspNetCore.Routing;
     using Microsoft.Extensions.DependencyInjection;
     using Newtonsoft.Json;
     using Antaris.AspNetCore.Mvc.Widgets.Infrastructure;
@@ -52,9 +53,7 @@
             {
                 if (_url == null)
                 {
-                    var services = WidgetContext.ViewContext?.HttpContext?.RequestServices;
-                    var factory = services?.GetRequiredService<IUrlHelperFactory>();
-                    _url = factory?.GetUrlHelper(WidgetContext.ViewContext);
+                    _url = HttpContext?.RequestServices?.GetRequiredService<IUrlHelper>();
                 }
 
                 return _url;
@@ -138,24 +137,13 @@
         }
 
         /// <summary>
-        /// Returns a new <see cref="ContentWidgetResult"/>.
+        /// Returns a new <see cref="HtmlContentWidgetResult"/>.
         /// </summary>
         /// <param name="content">The content to write.</param>
         /// <returns>The widget result instance.</returns>
         public ContentWidgetResult Content(string content)
         {
             return new ContentWidgetResult(content);
-        }
-
-        /// <summary>
-        /// Returns a new <see cref="JsonWidgetResult"/>.
-        /// </summary>
-        /// <param name="value">The value to serialize as JSON.</param>
-        /// <param name="serializerSettings">The serializer settings.</param>
-        /// <returns>The widget result instance.</returns>
-        public JsonWidgetResult Json(object value, JsonSerializerSettings serializerSettings = null)
-        {
-            return new JsonWidgetResult(value, serializerSettings);
         }
 
         /// <summary>

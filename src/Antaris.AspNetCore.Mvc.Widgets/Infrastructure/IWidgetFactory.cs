@@ -6,7 +6,7 @@
     public interface IWidgetFactory
     {
         /// <summary>
-        /// Creates a new widget for the specified <paramref name="context"/>
+        /// Initialises a widget.
         /// </summary>
         /// <param name="context">The widget context.</param>
         /// <returns>The widget instance.</returns>

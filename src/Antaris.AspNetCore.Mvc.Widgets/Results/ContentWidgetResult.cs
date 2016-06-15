@@ -2,7 +2,7 @@
 {
     using System;
     using System.Threading.Tasks;
-    using Microsoft.AspNet.Mvc.Internal;
+    using Microsoft.AspNetCore.Mvc.Internal;
     using Antaris.AspNetCore.Mvc.Widgets.Infrastructure;
 
     /// <summary>
@@ -11,7 +11,7 @@
     public class ContentWidgetResult : IWidgetResult
     {
         /// <summary>
-        /// Initialises a new instance of <see cref="ContentWidgetResult"/>.
+        /// Initialises a new instance of <see cref="HtmlContentWidgetResult"/>.
         /// </summary>
         /// <param name="content">The raw content.</param>
         public ContentWidgetResult(string content)

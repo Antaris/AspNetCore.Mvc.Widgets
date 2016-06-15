@@ -1,9 +1,9 @@
 ﻿namespace Antaris.AspNetCore.Mvc.Widgets.Internal
 {
     using Antaris.AspNetCore.Mvc.Widgets.Infrastructure;
-    using Microsoft.AspNet.Mvc;
-    using Microsoft.AspNet.Mvc.Rendering;
-    using Microsoft.AspNet.Mvc.ViewEngines;
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.AspNetCore.Mvc.Rendering;
+    using Microsoft.AspNetCore.Mvc.ViewEngines;
     using System.Collections.Generic;
     using System.Diagnostics;
 

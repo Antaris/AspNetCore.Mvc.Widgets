@@ -1,14 +1,14 @@
 ﻿namespace Antaris.AspNetCore.Mvc.Widgets.Infrastructure
 {
     using System;
-    using System.Diagnostics;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Reflection;
     using System.Runtime.ExceptionServices;
     using System.Threading.Tasks;
-    using Microsoft.AspNet.Html.Abstractions;
-    using Microsoft.AspNet.Mvc.Controllers;
-    using Microsoft.AspNet.Mvc.Rendering;
-    using Microsoft.Extensions.Logging;
+    using Microsoft.AspNetCore.Html;
+    using Microsoft.AspNetCore.Mvc.Internal;
+    using Microsoft.AspNetCore.Mvc.Rendering;
     using Antaris.AspNetCore.Mvc.Widgets.Internal;
 
     /// <summary>
@@ -17,72 +17,41 @@
     public class DefaultWidgetInvoker : IWidgetInvoker
     {
         private readonly IWidgetFactory _widgetFactory;
-        private readonly DiagnosticSource _diagnosticSource;
-        private readonly ILogger _logger;
         private readonly IWidgetArgumentBinder _argumentBinder;
 
         /// <summary>
         /// Initialises a new instance of <see cref="DefaultWidgetInvoker"/>.
         /// </summary>
-        /// <param name="widgetFactory">The widget factory used to create widget instances.</param>
-        /// <param name="argumentBinder">The argument binder.</param>
-        /// <param name="diagnosticSource">The <see cref="DiagnosticSource"/>.</param>
-        /// <param name="logger">The <see cref="ILogger"/>.</param>
+        /// <param name="widgetFactory">The widget factory.</param>
+        /// <param name="argumentBinder">The widget argument binder.</param>
         public DefaultWidgetInvoker(
             IWidgetFactory widgetFactory,
-            IWidgetArgumentBinder argumentBinder,
-            DiagnosticSource diagnosticSource,
-            ILogger logger)
+            IWidgetArgumentBinder argumentBinder)
         {
-            if (widgetFactory == null)
-            {
-                throw new ArgumentNullException(nameof(widgetFactory));
-            }
-
-            if (argumentBinder == null)
-            {
-                throw new ArgumentNullException(nameof(argumentBinder));
-            }
-
-            if (diagnosticSource == null)
-            {
-                throw new ArgumentNullException(nameof(diagnosticSource));
-            }
-
-            if (logger == null)
-            {
-                throw new ArgumentNullException(nameof(logger));
-            }
-
-            _widgetFactory = widgetFactory;
-            _argumentBinder = argumentBinder;
-            _diagnosticSource = diagnosticSource;
-            _logger = logger;
+            _widgetFactory = Ensure.ArgumentNotNull(widgetFactory, nameof(widgetFactory));
+            _argumentBinder = Ensure.ArgumentNotNull(argumentBinder, nameof(argumentBinder));
         }
 
         /// <inheritdoc />
         public async Task InvokeAsync(WidgetContext context)
         {
-            if (context == null)
-            {
-                throw new ArgumentNullException(nameof(context));
-            }
-
-            var method = ResolveMethod(context);
-            if (method == null)
-            {
-                throw new ArgumentNullException("Unable to determine target widget method.");
-            }
-
-            var isAsync = typeof(Task).GetTypeInfo().IsAssignableFrom(method.MethodInfo.ReturnType.GetTypeInfo());
             IWidgetResult result;
-            if (isAsync)
+            var asyncMethod = WidgetMethodSelector.FindAsyncMethod(context, context.WidgetDescriptor.TypeInfo);
+
+            if (asyncMethod == null)
             {
-                result = await InvokeAsyncCore(method.MethodInfo, context);
+                var syncMethod = WidgetMethodSelector.FindSyncMethod(context, context.WidgetDescriptor.TypeInfo);
+
+                if (syncMethod == null)
+                {
+                    throw new InvalidOperationException("Cannot find an appropriate method.");
+                }
+
+                result = InvokeSyncCore(syncMethod, context);
             }
             else
             {
-                result = InvokeSyncCore(method.MethodInfo, context);
+                result = await InvokeAsyncCore(asyncMethod, context);
             }
 
             await result.ExecuteAsync(context);
@@ -107,10 +76,10 @@
                 return new ContentWidgetResult(stringResult);
             }
 
-            var htmlContent = value as IHtmlContent;
-            if (htmlContent != null)
+            var htmlContentResult = value as IHtmlContent;
+            if (htmlContentResult != null)
             {
-                return new HtmlContentWidgetResult(htmlContent);
+                return new HtmlContentWidgetResult(htmlContentResult);
             }
 
             throw new InvalidOperationException($"Widgets only support returning {typeof(string).Name}, {typeof(IHtmlContent).Name} or {typeof(IWidgetResult).Name}");
@@ -119,133 +88,64 @@
         /// <summary>
         /// Invokes an asynchronous method.
         /// </summary>
-        /// <param name="methodInfo">The method to invoke.</param>
+        /// <param name="method">The method to invoke.</param>
         /// <param name="context">The widget context.</param>
         /// <returns>The widget result.</returns>
-        private async Task<IWidgetResult> InvokeAsyncCore(MethodInfo methodInfo, WidgetContext context)
+        private async Task<IWidgetResult> InvokeAsyncCore(MethodInfo method, WidgetContext context)
         {
             var widget = _widgetFactory.CreateWidget(context);
 
-            using (_logger.WidgetScope(context))
-            {
-                var arguments = await _argumentBinder.BindArgumentsAsync(context, methodInfo, context.Arguments);
+            var arguments = await GetArgumentsAsync(context, method, context.Arguments);
+            var executor = ObjectMethodExecutor.Create(method, context.WidgetDescriptor.TypeInfo);
 
-                _diagnosticSource.BeforeWidget(context, widget);
-                _logger.WidgetExecuting(context, arguments);
-
-                var startTimestamp = _logger.IsEnabled(LogLevel.Debug) ? Stopwatch.GetTimestamp() : 0;
-                var result = await ControllerActionExecutor.ExecuteAsync(methodInfo, widget, arguments);
-
-                var widgetResult = CoerceToWidgetResult(result);
-                _logger.WidgetExecuted(context, startTimestamp, widgetResult);
-                _diagnosticSource.AfterWidget(context, widgetResult, widget);
-
-                _widgetFactory.ReleaseWidget(context, widget);
-
-                return widgetResult;
-            }
+            var result = await ControllerActionExecutor.ExecuteAsync(executor, widget, arguments);
+            var widgetResult = CoerceToWidgetResult(result);
+            return widgetResult;
         }
 
         /// <summary>
         /// Invokes a synchronous method.
         /// </summary>
-        /// <param name="methodInfo">The method to invoke.</param>
+        /// <param name="method">The method to invoke.</param>
         /// <param name="context">The widget context.</param>
         /// <returns>The widget result.</returns>
-        private IWidgetResult InvokeSyncCore(MethodInfo methodInfo, WidgetContext context)
+        private IWidgetResult InvokeSyncCore(MethodInfo method, WidgetContext context)
         {
             var widget = _widgetFactory.CreateWidget(context);
+            object result = null;
 
-            using (_logger.WidgetScope(context))
+            var arguments = GetArgumentsAsync(context, method, context.Arguments).GetAwaiter().GetResult();
+
+            try
             {
-                var arguments = _argumentBinder.BindArgumentsAsync(context, methodInfo, context.Arguments).GetAwaiter().GetResult();
-
-                _diagnosticSource.BeforeWidget(context, widget);
-                _logger.WidgetExecuting(context, arguments);
-
-                var startTimestamp = _logger.IsEnabled(LogLevel.Debug) ? Stopwatch.GetTimestamp() : 0;
-                object result;
-                try
-                {
-                    result = methodInfo.Invoke(widget, arguments);
-                }
-                catch (TargetInvocationException ex)
-                {
-                    _widgetFactory.ReleaseWidget(context, widget);
-
-                    var exceptionInfo = ExceptionDispatchInfo.Capture(ex.InnerException);
-                    exceptionInfo.Throw();
-
-                    // Unreachable.
-                    return null;
-                }
-
+                result = method.Invoke(widget, arguments);
                 var widgetResult = CoerceToWidgetResult(result);
-                _logger.WidgetExecuted(context, startTimestamp, widgetResult);
-                _diagnosticSource.AfterWidget(context, widgetResult, widget);
-
-                _widgetFactory.ReleaseWidget(context, widget);
 
                 return widgetResult;
+            }
+            catch (TargetInvocationException ex)
+            {
+                var exceptionInfo = ExceptionDispatchInfo.Capture(ex.InnerException);
+                exceptionInfo.Throw();
+
+                return null; // Unreachable
             }
         }
 
         /// <summary>
-        /// Resolves the method that will be executed by the widget.
+        /// Gets the arguments for the target method. 
         /// </summary>
+        /// <remarks>
+        /// The argument binder will provide a mixed-result of values from the provided dictionary, and those from model binding.
+        /// </remarks>
         /// <param name="context">The widget context.</param>
-        /// <returns>The method to execute.</returns>
-        private WidgetMethodDescriptor ResolveMethod(WidgetContext context)
+        /// <param name="method">The target method.</param>
+        /// <param name="values">The set of provided values.</param>
+        /// <returns>The bound arguments.</returns>
+        private async Task<object[]> GetArgumentsAsync(WidgetContext context, MethodInfo method, IDictionary<string, object> values)
         {
-            // We need to resolve some state and a widget id.
-            var request = context.ViewContext?.HttpContext?.Request;
-            string id = null;
-            string state = null;
-            WidgetHttpMethod httpMethod = WidgetHttpMethod.Get;
-
-            if (request != null)
-            {
-                httpMethod = string.Equals(request.Method, "post", StringComparison.OrdinalIgnoreCase)
-                    ? WidgetHttpMethod.Post : httpMethod;
-
-                if (httpMethod == WidgetHttpMethod.Post)
-                {
-                    state = request.Form[WidgetConventions.WidgetState];
-                    id = request.Form[WidgetConventions.WidgetTarget];
-
-                    if (!string.Equals(id, context.WidgetId, StringComparison.OrdinalIgnoreCase))
-                    {
-                        // Enforce we only use GET methods.
-                        httpMethod = WidgetHttpMethod.Get;
-                    }
-                }
-            }
-
-            /*
-             * Rank:
-             * Invoke{State}{Method}Async/Invoke{State}{Method}
-             * Invoke{State}Async/Invoke{State}
-             * Invoke{Method}Async/Invoke{Method}
-             * InvokeAsync/Invoke
-             */
-            
-            for (int i = 0; i < context.WidgetDescriptor.Methods.Length; i++)
-            {
-                var descriptor = context.WidgetDescriptor.Methods[i];
-
-                if (descriptor.HttpMethod != httpMethod && descriptor.HttpMethod != WidgetHttpMethod.Any)
-                {
-                    continue;
-                }
-
-                if (string.Equals(descriptor.State, state))
-                {
-                    // This method will work for us.
-                    return descriptor;
-                }
-            }
-
-            return null;
+            var arguments = await _argumentBinder.BindArgumentsAsync(context, method, values);
+            return arguments.Values.ToArray();
         }
     }
 }

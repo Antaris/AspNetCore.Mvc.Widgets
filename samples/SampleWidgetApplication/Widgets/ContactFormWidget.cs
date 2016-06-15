@@ -1,10 +1,7 @@
 ﻿using Antaris.AspNetCore.Mvc.Widgets;
-using Microsoft.AspNet.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using SampleWidgetApplication.Services;
-using SampleWidgetApplication.ViewModels;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using SampleWidgetApplication.Models;
 using System.Threading.Tasks;
 
 namespace SampleWidgetApplication.Widgets
