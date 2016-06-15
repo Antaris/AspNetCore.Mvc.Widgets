@@ -188,6 +188,8 @@
         {
             var viewData = new ViewDataDictionary<T>(ViewData, model);
 
+            viewData.Add(WidgetConstants.WidgetContextKey, WidgetContext);
+
             return new ViewWidgetResult()
             {
                 ViewEngine = ViewEngine,

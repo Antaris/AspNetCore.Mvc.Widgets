@@ -17,4 +17,6 @@
 </address>
 
 <hr />
-@await Widget.InvokeAsync("ContactForm")
+@await Widget.InvokeAsync("ContactForm", widgetId: "TestConfirmationWidgetInstance")
+<hr />
+@await Widget.InvokeAsync("ContactForm", widgetId: "TestConfirmationWidgetInstance2")

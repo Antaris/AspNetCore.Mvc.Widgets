@@ -1,0 +1,11 @@
+﻿@model SampleWidgetApplication.Widgets.WizardViewModel
+<form method="post" widget-state="Question">
+    <div class="form-group">
+        <label asp-for="Name" />
+        <input asp-for="Name" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <button type="submit">Send</button>
+    </div>
+</form>

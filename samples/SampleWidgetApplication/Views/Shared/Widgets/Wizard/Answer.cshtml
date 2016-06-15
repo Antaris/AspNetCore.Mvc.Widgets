@@ -1,0 +1,4 @@
+﻿@model SampleWidgetApplication.Widgets.WizardViewModel
+<div class="alert alert-success">
+    Hi @Model.Name @if (Model.DoYouLikeStuff) { <strong>you don't like stuff</strong> } else { <strong>You like stuff!</strong> }
+</div>

@@ -1,0 +1,12 @@
+﻿@model SampleWidgetApplication.Widgets.WizardViewModel
+<form method="post" widget-state="Confirmation">
+    <input asp-for="Name" type="hidden" />
+
+    <div class="form-group">
+        <input asp-for="DoYouLikeStuff" type="checkbox" /> Do you like stuff?
+    </div>
+
+    <div class="form-group">
+        <button type="submit">Send</button>
+    </div>
+</form>

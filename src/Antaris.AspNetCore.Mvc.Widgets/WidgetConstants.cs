@@ -11,5 +11,8 @@
         // Widget Forms
         public const string PostTarget = "__posttarget";
         public const string PostState = "__poststate";
+
+        // Widget context.
+        public const string WidgetContextKey = "__WidgetContext";
     }
 }

@@ -59,4 +59,71 @@ Arguments provided at invocation are used over model binder-sourced arguments.
 
 Widgets can be used to create isolated units of logic that can render and respond independently of the parent page.
 
+Multiple Widgets on the same page
+====
+Where the same widget is placed on the page multiple times, each needs to be able to be processed individually. This can be achieved by setting a `widgetId`:
+
+```csharp
+@await Widget.InvokeAsync("ContactForm", widgetId: "Form1");
+@await Widget.InvokeAsync("ContactForm", widgetId: "Form2");
+```
+
+And when generating the form, add the `widget-form` or `widget-state` attributes:
+
+```html
+<form method="post" widget-form>
+
+</form>
+```
+
+
+Multi-state Widgets
+====
+
+Often HTML workflows can span multiple pages using `<form>` to pass data from step to step. It is possible to model something similar using widgets. Widgets can support multiple states, e.g.
+
+```csharp
+public class WizardWidget : Widget
+{
+	public IWidgetResult InvokeGet()
+	{
+		return View("StepA");
+	}
+
+	public IWidgetResult InvokeStepAPost(WizardViewModel model)
+	{
+		if (ModelState.IsValid)
+		{
+			return View("StepB", model);
+		}
+
+		return View("StepA", model);
+	}
+
+	public IWidgetResult InvokeStepBPost(WizardViewModel model)
+	{
+		if (ModelState.IsValid)
+		{
+			return View("Confirmation", model);
+		}
+
+		return View("StepB");
+	}
+}
+```
+
+Which can be paired with a set of views:
+
+```html
+StepA.cshtml:
+<form method="post" widget-state="StepA">
+	...
+</form>
+
+StepB.cshtml:
+<form method="post" widget-state="StepB">
+	...
+</form>
+```
+
 **THIS IS A PROTOTYPE**

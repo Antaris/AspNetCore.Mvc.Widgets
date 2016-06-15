@@ -49,19 +49,19 @@
         }
 
         /// <inheritdoc />
-        public Task<IHtmlContent> InvokeAsync(TypeInfo widgetType, object values = null, string elementId = null)
+        public Task<IHtmlContent> InvokeAsync(TypeInfo widgetType, object values = null, string widgetId = null, string widgetState = null)
         {
             var descriptor = SelectWidget(widgetType);
 
-            return InvokeCoreAsync(descriptor, values, elementId);
+            return InvokeCoreAsync(descriptor, values, widgetId, widgetState);
         }
 
         /// <inheritdoc />
-        public Task<IHtmlContent> InvokeAsync(string name, object values = null, string elementId = null)
+        public Task<IHtmlContent> InvokeAsync(string name, object values = null, string widgetId = null, string widgetState = null)
         {
             var descriptor = SelectWidget(name);
 
-            return InvokeCoreAsync(descriptor, values, elementId);
+            return InvokeCoreAsync(descriptor, values, widgetId, widgetState);
         }
 
         /// <summary>
@@ -69,16 +69,18 @@
         /// </summary>>
         /// <param name="descriptor">The widget descriptor.</param>
         /// <param name="values">The set of values to provide to the widget.</param>
-        /// <param name="elementId">[Optional] The element id.</param>
+        /// <param name="widgetId">[Optional] The widget id.</param>
+        /// <param name="widgetState">[Optional] The widget state.</param>
         /// <returns>The task instance.</returns>
-        private async Task<IHtmlContent> InvokeCoreAsync(WidgetDescriptor descriptor, object values = null, string elementId = null)
+        private async Task<IHtmlContent> InvokeCoreAsync(WidgetDescriptor descriptor, object values = null, string widgetId = null, string widgetState = null)
         {
             var viewBuffer = new ViewBuffer(_viewBufferScope, descriptor.FullName, ViewBuffer.ViewComponentPageSize);
             using (var writer = new ViewBufferTextWriter(viewBuffer, _viewContext.Writer.Encoding))
             {
                 var context = new WidgetContext(descriptor, PropertyHelper.ObjectToDictionary(values), _htmlEncoder, _viewContext, writer)
                 {
-                    WidgetId = elementId
+                    WidgetId = widgetId,
+                    WidgetState = widgetState
                 };
                 var invoker = _invokerFactory.CreateInstance(context);
 
