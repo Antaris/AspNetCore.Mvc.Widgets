@@ -188,6 +188,9 @@
         {
             var viewData = new ViewDataDictionary<T>(ViewData, model);
 
+            // MA - We need to flow the widget context here so it is available in tag helpers.
+            viewData.Add(WidgetConstants.WidgetContextKey, WidgetContext);
+
             return new ViewWidgetResult()
             {
                 ViewEngine = ViewEngine,
