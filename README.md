@@ -8,6 +8,23 @@ Widgets are essentially the same as ViewComponents with some subtle differences:
 1. The arguments provided to a Widget can be provided through model binding
 2. The methods that are executed are determined based on the HTTP method.
 
+Getting Started
+====
+
+I don't currently offer a NuGet package, but you can easily clone the source and build it. I need to figure out where this sits with the MVC family of packages - should this be a first-class feature, or perhaps belong to some MVC Core Contrib project? Feedback welcome.
+
+To start, you can need to add the widget services:
+
+```csharp
+services.AddMvc().AddMvcWidgets();
+```
+
+or...
+
+```csharp
+services.AddMvcCore().AddMvcWidgets();
+```
+
 Example Widget
 ====
 
