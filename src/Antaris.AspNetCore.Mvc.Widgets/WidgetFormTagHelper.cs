@@ -41,7 +41,11 @@
             output.PostContent.AppendHtml($"<input type='hidden' name='{WidgetConstants.PostTarget}' value='{widgetId}' />");
             output.PostContent.AppendHtml($"<input type='hidden' name='{WidgetConstants.PostState}' value='{widgetState}' />");
 
+#if !NET451
             return Task.CompletedTask;
+#else
+            return Task.FromResult(0);
+#endif
         }
     }
 }

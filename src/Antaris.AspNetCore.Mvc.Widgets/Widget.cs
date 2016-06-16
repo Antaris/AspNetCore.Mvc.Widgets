@@ -88,7 +88,7 @@
         /// <summary>
         /// Gets the view context.
         /// </summary>
-        public ViewContext ViewContext => _widgetContext.ViewContext;
+        public ViewContext ViewContext => WidgetContext.ViewContext;
 
         /// <summary>
         /// Gets the view data dictionary.
@@ -187,8 +187,6 @@
         public ViewWidgetResult View<T>(string viewName, T model)
         {
             var viewData = new ViewDataDictionary<T>(ViewData, model);
-
-            viewData.Add(WidgetConstants.WidgetContextKey, WidgetContext);
 
             return new ViewWidgetResult()
             {

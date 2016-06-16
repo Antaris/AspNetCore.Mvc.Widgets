@@ -18,6 +18,10 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Antaris.AspNetCore.Mvc.Widg
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "SampleWidgetApplication", "samples\SampleWidgetApplication\SampleWidgetApplication.xproj", "{AFCFADD6-6C00-42CA-A4C4-0513B824F106}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{D40AD7E7-40D8-4A15-9202-5C6A9D8FB919}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Antaris.AspNetCore.Mvc.Widgets.Tests", "tests\Antaris.AspNetCore.Mvc.Widgets.Tests\Antaris.AspNetCore.Mvc.Widgets.Tests.xproj", "{66F4DFAA-E9D9-4685-852F-B0A0823452EF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -32,6 +36,10 @@ Global
 		{AFCFADD6-6C00-42CA-A4C4-0513B824F106}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AFCFADD6-6C00-42CA-A4C4-0513B824F106}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AFCFADD6-6C00-42CA-A4C4-0513B824F106}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66F4DFAA-E9D9-4685-852F-B0A0823452EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66F4DFAA-E9D9-4685-852F-B0A0823452EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66F4DFAA-E9D9-4685-852F-B0A0823452EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66F4DFAA-E9D9-4685-852F-B0A0823452EF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -39,5 +47,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{5F33234E-4B13-4515-A904-666C6564E1EF} = {B8E8976C-B0F8-45AA-B5B7-EE7CD95D0E89}
 		{AFCFADD6-6C00-42CA-A4C4-0513B824F106} = {B3DEB239-F49B-49FB-80D9-F51F1E937D05}
+		{66F4DFAA-E9D9-4685-852F-B0A0823452EF} = {D40AD7E7-40D8-4A15-9202-5C6A9D8FB919}
 	EndGlobalSection
 EndGlobal
